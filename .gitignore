@@ -1,0 +1,34 @@
+# Node modules 
+node_modules
+# Build output
+dist
+build
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# dotenv environment variable files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.deployment.local
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE/editor folders
+.vscode
+.idea
+
+# Coverage reports
+coverage
+
+# Misc
+*.log
+*.tgz
