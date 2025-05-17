@@ -1,156 +1,193 @@
-import React, { useState, useEffect } from 'react';
-import api from '../api';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { AppContext } from '../context/AppContext';
 
 const Admin = () => {
-  const [complaints, setComplaints] = useState([]);
-  const [selected, setSelected] = useState(null);
-  const [status, setStatus] = useState('');
-  const [note, setNote] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [updateLoading, setUpdateLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [updateError, setUpdateError] = useState(null);
-
-  useEffect(() => {
-    const fetchComplaints = async () => {
-      try {
-        const response = await api.get('/complaints', { params: { status: 'Pending' } });
-        setComplaints(response.data);
-      } catch (err) {
-        setError(err.response?.data?.error || err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchComplaints();
-  }, []);
-
-  const handleSelect = (complaint) => {
-    setSelected(complaint);
-    setStatus(complaint.status || '');
-    setNote('');
-    setUpdateError(null);
-  };
-
-  const handleUpdate = async (e) => {
-    e.preventDefault();
-    setUpdateLoading(true);
-    setUpdateError(null);
-    try {
-      await api.put(`/complaints/${selected._id}`, { status, note });
-      const response = await api.get('/complaints', { params: { status: 'Received' } });
-      setComplaints(response.data);
-      setSelected(null);
-    } catch (err) {
-      setUpdateError(err.response?.data?.error || err.message);
-    } finally {
-      setUpdateLoading(false);
-    }
-  };
-
-  if (loading) return <div className="text-center mt-10 text-gray-600">Loading complaints...</div>;
-  if (error) return <div className="text-center mt-10 text-red-600">Error: {error}</div>;
-  if (!complaints.length) return <div className="text-center mt-10 text-gray-600">No complaints found.</div>;
-
+  const { complaints } = React.useContext(AppContext);
+  const navigate = useNavigate();
+  const [filter, setFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  const filteredComplaints = complaints.filter(complaint => {
+    const matchesFilter = filter === 'all' || complaint.status === filter;
+    const matchesSearch =
+      searchTerm === '' || 
+      complaint.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      complaint.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      complaint.id.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    return matchesFilter && matchesSearch;
+  });
+  
+  const totalComplaints = complaints.length;
+  const openComplaints = complaints.filter(c => c.status === 'Open').length;
+  const inProgressComplaints = complaints.filter(c => c.status === 'In Progress').length;
+  const resolvedComplaints = complaints.filter(c => c.status === 'Resolved').length;
+  
+  const categoryCounts = {};
+  complaints.forEach(complaint => {
+    categoryCounts[complaint.category] = (categoryCounts[complaint.category] || 0) + 1;
+  });
+  
+  const categories = Object.entries(categoryCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, count]) => ({ name, count }));
+  
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-semibold mb-6 text-center">Admin Dashboard</h1>
-
-      <div className="overflow-x-auto">
-        <table className="w-full border border-gray-200 rounded-lg shadow-sm">
-          <thead className="bg-gray-100 text-left">
-            <tr>
-              <th className="p-3">ID</th>
-              <th className="p-3">Category</th>
-              <th className="p-3">Name</th>
-              <th className="p-3">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {complaints.map((c) => (
-              <tr key={c._id} className="border-t hover:bg-gray-50">
-                <td className="p-3">{c._id}</td>
-                <td className="p-3">{c.category}</td>
-                <td className="p-3">{c.citizen?.name}</td>
-                <td className="p-3">
-                  <button
-                    className="text-blue-600 hover:underline"
-                    onClick={() => handleSelect(c)}
-                  >
-                    View Details
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {selected && (
-        <div className="mt-10 border-t pt-6">
-          <h2 className="text-xl font-semibold mb-4">Complaint Details</h2>
-          <div className="space-y-2 text-sm text-gray-700">
-            <p><strong>ID:</strong> {selected._id}</p>
-            <p><strong>Name:</strong> {selected.citizen.name}</p>
-            <p><strong>Contact:</strong> {selected.citizen.contact}</p>
-            <p><strong>Category:</strong> {selected.category}</p>
-            <p><strong>Description:</strong> {selected.description}</p>
-          </div>
-
-          <h3 className="mt-6 font-semibold">History</h3>
-          <ul className="mt-2 space-y-3 text-sm bg-gray-50 p-4 rounded">
-            {selected.history.map((entry, idx) => (
-              <li key={idx} className="border-b pb-2 last:border-none">
-                <p><strong>Status:</strong> {entry.status}</p>
-                <p><strong>Date:</strong> {new Date(entry.date).toLocaleString()}</p>
-                <p><strong>Note:</strong> {entry.note}</p>
-              </li>
-            ))}
-          </ul>
-
-          <form onSubmit={handleUpdate} className="mt-6 space-y-4 max-w-md">
-            <div>
-              <label className="block text-sm font-medium">Status</label>
-              <input
-                type="text"
-                className="mt-1 w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={status}
-                onChange={e => setStatus(e.target.value)}
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Note</label>
-              <input
-                type="text"
-                className="mt-1 w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={note}
-                onChange={e => setNote(e.target.value)}
-                required
-              />
-            </div>
-            <div className="flex items-center space-x-4">
-              <button
-                type="submit"
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-                disabled={updateLoading}
-              >
-                {updateLoading ? 'Updating...' : 'Update Status'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelected(null)}
-                className="text-gray-500 hover:underline"
-              >
-                Cancel
-              </button>
-            </div>
-            {updateError && (
-              <p className="text-red-500 text-sm mt-2">{updateError}</p>
-            )}
-          </form>
+    <div className="container mx-auto p-4">
+      <h2 className="text-2xl font-bold mb-6">Admin Dashboard</h2>
+      
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white p-4 rounded-lg shadow">
+          <p className="text-sm text-gray-600">Total Complaints</p>
+          <p className="text-2xl font-bold">{totalComplaints}</p>
         </div>
-      )}
+        <div className="bg-white p-4 rounded-lg shadow">
+          <p className="text-sm text-gray-600">Open</p>
+          <p className="text-2xl font-bold text-yellow-600">{openComplaints}</p>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow">
+          <p className="text-sm text-gray-600">In Progress</p>
+          <p className="text-2xl font-bold text-blue-600">{inProgressComplaints}</p>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow">
+          <p className="text-sm text-gray-600">Resolved</p>
+          <p className="text-2xl font-bold text-green-600">{resolvedComplaints}</p>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="bg-white p-4 rounded-lg shadow md:col-span-2">
+          <h3 className="text-lg font-semibold mb-4">Recent Complaints</h3>
+          <div className="space-y-3">
+            {complaints
+              .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+              .slice(0, 5)
+              .map(complaint => (
+                <div 
+                  key={complaint.id}
+                  className="border-b pb-2 cursor-pointer hover:bg-gray-50"
+                  onClick={() => navigate(`/complaint/${complaint.id}`)}
+                >
+                  <div className="flex justify-between">
+                    <p className="font-medium">{complaint.title}</p>
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                      complaint.status === 'Open' ? 'bg-yellow-100 text-yellow-800' :
+                      complaint.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                      'bg-green-100 text-green-800'
+                    }`}>
+                      {complaint.status}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600">ID: {complaint.id} | {complaint.createdAt}</p>
+                </div>
+            ))}
+          </div>
+        </div>
+        
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h3 className="text-lg font-semibold mb-4">Top Categories</h3>
+          <div className="space-y-3">
+            {categories.slice(0, 5).map((category, index) => (
+              <div key={index} className="flex justify-between items-center">
+                <span>{category.name}</span>
+                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">{category.count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      
+      <div className="bg-white p-6 rounded-lg shadow mb-6">
+        <h3 className="text-lg font-semibold mb-4">All Complaints</h3>
+        
+        <div className="flex flex-wrap justify-between items-center mb-4">
+          <div className="flex space-x-2 mb-2 sm:mb-0">
+            <button 
+              onClick={() => setFilter('all')}
+              className={`px-3 py-1 rounded ${filter === 'all' ? 'bg-gray-200' : 'bg-gray-100 hover:bg-gray-200'}`}
+            >
+              All
+            </button>
+            <button 
+              onClick={() => setFilter('Open')}
+              className={`px-3 py-1 rounded ${filter === 'Open' ? 'bg-yellow-200' : 'bg-yellow-100 hover:bg-yellow-200'}`}
+            >
+              Open
+            </button>
+            <button 
+              onClick={() => setFilter('In Progress')}
+              className={`px-3 py-1 rounded ${filter === 'In Progress' ? 'bg-blue-200' : 'bg-blue-100 hover:bg-blue-200'}`}
+            >
+              In Progress
+            </button>
+            <button 
+              onClick={() => setFilter('Resolved')}
+              className={`px-3 py-1 rounded ${filter === 'Resolved' ? 'bg-green-200' : 'bg-green-100 hover:bg-green-200'}`}
+            >
+              Resolved
+            </button>
+          </div>
+          
+          <div className="w-full sm:w-auto">
+            <input
+              type="text"
+              placeholder="Search complaints..."
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+        
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredComplaints.map((complaint) => (
+                <tr key={complaint.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{complaint.id}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{complaint.title}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{complaint.category}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{complaint.createdAt}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      complaint.status === 'Open' ? 'bg-yellow-100 text-yellow-800' :
+                      complaint.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                      'bg-green-100 text-green-800'
+                    }`}>
+                      {complaint.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button
+                      onClick={() => navigate(`/complaint/${complaint.id}`)}
+                      className="text-blue-600 hover:text-blue-900"
+                    >
+                      View
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        
+        {filteredComplaints.length === 0 && (
+          <div className="text-center py-4">
+            <p className="text-gray-500">No complaints found</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
