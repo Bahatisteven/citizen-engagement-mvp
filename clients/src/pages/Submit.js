@@ -1,169 +1,154 @@
 import React, { useState } from 'react';
-import api from '../api';
-
-const categories = ['Road', 'Water', 'Electricity', 'Health', 'Other'];
+import { useNavigate } from 'react-router-dom';
+import { AppContext } from '../context/AppContext';
 
 const Submit = () => {
-  const [form, setForm] = useState({
+  const { addComplaint, getCategories } = React.useContext(AppContext);
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
     title: '',
-    name: '',
-    contact: '',
-    category: '',
     description: '',
+    category: '',
+    location: '',
+    image: null
   });
-  const [ticketId, setTicketId] = useState(null);
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const categories = getCategories();
 
   const handleChange = (e) => {
-    setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleImageChange = (e) => {
+    if (e.target.files[0]) {
+      setFormData(prev => ({ ...prev, image: e.target.files[0] }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setTicketId(null);
-    setLoading(true);
+    setSuccess(false);
 
-    const payload = {
-      title:       form.title,
-      description: form.description,
-      category:    form.category,
-      citizen: {
-        name:    form.name,
-        contact: form.contact,
-      }
-    };
+    if (!formData.title || !formData.description || !formData.category) {
+      setError('Please fill all required fields');
+      return;
+    }
 
     try {
-      const { data } = await api.post('/complaints', payload);
-      setTicketId(data.id);
-      // reset form
-      setForm({ title: '', name: '', contact: '', category: '', description: '' });
+      const newComplaint = addComplaint({
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        location: formData.location
+      });
+
+      setSuccess(true);
+      setFormData({
+        title: '',
+        description: '',
+        category: '',
+        location: '',
+        image: null
+      });
+
+      setTimeout(() => {
+        navigate(`/complaint/${newComplaint.id}`);
+      }, 2000);
     } catch (err) {
-      setError(err.response?.data?.error || err.message);
-    } finally {
-      setLoading(false);
+      setError('Failed to submit complaint');
     }
   };
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-8">
-      <h1 className="text-2xl font-semibold mb-6 text-center">Submit a Complaint</h1>
-
-      {ticketId && (
-        <div className="mb-6 p-4 bg-green-100 border border-green-200 rounded text-green-800">
-          Your ticket has been submitted! <strong>ID: {ticketId}</strong>
-        </div>
-      )}
-      {error && (
-        <div className="mb-6 p-4 bg-red-100 border border-red-200 rounded text-red-800">
-          {error}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* title */}
-        <div>
-          <label htmlFor="title" className="block text-sm font-medium mb-1">
-            Issue Title
-          </label>
-          <input
-            id="title"
-            name="title"
-            type="text"
-            value={form.title}
-            onChange={handleChange}
-            required
-            className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        {/* citizen name */}
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium mb-1">
-            Your Name
-          </label>
-          <input
-            id="name"
-            name="name"
-            type="text"
-            value={form.name}
-            onChange={handleChange}
-            required
-            className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        {/* contact */}
-        <div>
-          <label htmlFor="contact" className="block text-sm font-medium mb-1">
-            Contact (Email or Phone)
-          </label>
-          <input
-            id="contact"
-            name="contact"
-            type="text"
-            value={form.contact}
-            onChange={handleChange}
-            required
-            className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        {/* category */}
-        <div>
-          <label htmlFor="category" className="block text-sm font-medium mb-1">
-            Category
-          </label>
-          <select
-            id="category"
-            name="category"
-            value={form.category}
-            onChange={handleChange}
-            required
-            className="w-full border rounded px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="" disabled>
-              Select a category
-            </option>
-            {categories.map(cat => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* description */}
-        <div>
-          <label htmlFor="description" className="block text-sm font-medium mb-1">
-            Description
-          </label>
-          <textarea
-            id="description"
-            name="description"
-            rows="4"
-            value={form.description}
-            onChange={handleChange}
-            required
-            className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        {/* submit button */}
-        <div className="text-center">
+    <div className="container mx-auto p-4 max-w-2xl">
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h2 className="text-2xl font-bold mb-6">Submit a Complaint or Feedback</h2>
+        
+        {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
+        {success && <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">Your complaint has been submitted successfully! You will be redirected shortly.</div>}
+        
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label className="block text-gray-700 mb-2" htmlFor="title">Title <span className="text-red-600">*</span></label>
+            <input
+              id="title"
+              name="title"
+              type="text"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={formData.title}
+              onChange={handleChange}
+              placeholder="Brief title of your complaint"
+              required
+            />
+          </div>
+          
+          <div className="mb-4">
+            <label className="block text-gray-700 mb-2" htmlFor="category">Category <span className="text-red-600">*</span></label>
+            <select
+              id="category"
+              name="category"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={formData.category}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Select a category</option>
+              {categories.map((category, index) => (
+                <option key={index} value={category}>{category}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="mb-4">
+            <label className="block text-gray-700 mb-2" htmlFor="description">Description <span className="text-red-600">*</span></label>
+            <textarea
+              id="description"
+              name="description"
+              rows="4"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={formData.description}
+              onChange={handleChange}
+              placeholder="Detailed description of the issue"
+              required
+            ></textarea>
+          </div>
+          
+          <div className="mb-4">
+            <label className="block text-gray-700 mb-2" htmlFor="location">Location</label>
+            <input
+              id="location"
+              name="location"
+              type="text"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={formData.location}
+              onChange={handleChange}
+              placeholder="Address or location of the issue (if applicable)"
+            />
+          </div>
+          
+          <div className="mb-6">
+            <label className="block text-gray-700 mb-2" htmlFor="image">Attach Image (optional)</label>
+            <input
+              id="image"
+              name="image"
+              type="file"
+              accept="image/*"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onChange={handleImageChange}
+            />
+          </div>
+          
           <button
             type="submit"
-            disabled={loading}
-            className={`w-full max-w-xs px-4 py-2 rounded text-white ${
-              loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-            }`}
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-300"
           >
-            {loading ? 'Submitting...' : 'Submit Complaint'}
+            Submit Complaint
           </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 };

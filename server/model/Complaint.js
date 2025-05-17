@@ -12,12 +12,24 @@ const ComplaintSchema = new Schema(
     description: {
       type: String,
       required: true,
+      trim: true,
     },
 
     category: {
       type: String,
       required: true,
-      enum: ['Road', 'Electricity', 'Water', 'Health', 'Sanitation', 'Leadership', 'Infrastructure', 'Environment', 'Public Services', 'Other'], 
+      enum: [
+        'Road',
+        'Electricity',
+        'Water',
+        'Health',
+        'Sanitation',
+        'Leadership',
+        'Infrastructure',
+        'Environment',
+        'Public Services',
+        'Other'
+      ],
     },
 
     status: {
@@ -26,42 +38,65 @@ const ComplaintSchema = new Schema(
       default: 'Pending',
     },
 
-    assignedAgency: {
-      type: String,
-      required: true,
-    },
-
     citizen: {
       name: {
         type: String,
         required: true,
+        trim: true,
       },
       contact: {
         type: String,
         required: true,
+        trim: true,
+      },
+      email: {
+        type: String,
+        trim: true,
       },
     },
 
-    history: [
+    assignedAgency: {
+      type: Schema.Types.ObjectId,
+      ref: 'User', 
+      required: true,
+    },
+
+    responses: [
       {
-        action: String,            
+        message: String,
+        respondedBy: {
+          type: Schema.Types.ObjectId,
+          ref: 'User',
+        },
         timestamp: {
           type: Date,
           default: Date.now,
         },
-        updatedBy: String,          
+      },
+    ],
+
+    history: [
+      {
+        action: {
+          type: String,
+          enum: ['Created', 'Assigned', 'Updated', 'Resolved', 'Rejected'],
+          required: true,
+        },
+        timestamp: {
+          type: Date,
+          default: Date.now,
+        },
+        updatedBy: {
+          type: Schema.Types.ObjectId,
+          ref: 'User',
+        },
         notes: String,
       },
     ],
   },
-  { timestamps: true } 
+  {
+    timestamps: true,
+  }
 );
-
-module.exports = mongoose.model('Complaint', ComplaintSchema);
-
-
-
-
-
 
 module.exports = mongoose.model('Complaint', ComplaintSchema);
