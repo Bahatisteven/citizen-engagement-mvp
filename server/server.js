@@ -12,22 +12,7 @@ const app = express();
 app.use(express.json());
 
 
-const allowed = [
-  process.env.FRONTEND_URL,            
-  'http://localhost:3000'              
-];
-
-app.use(cors({
-  origin: (incomingOrigin, callback) => {
-    if (!incomingOrigin) return callback(null, true);
-    if (allowed.includes(incomingOrigin)) {
-      callback(null, true);
-    } else {
-      callback(new Error(`Origin ${incomingOrigin} not allowed by CORS`));
-    }
-  },
-  credentials: true
-}));
+app.use(cors({}));
 
 
 app.use('/api/auth', authRoutes);
