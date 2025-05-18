@@ -1,20 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
 
 const Submit = () => {
   const { addComplaint, getCategories } = React.useContext(AppContext);
   const navigate = useNavigate();
+
+  // 1) hold categories in state
+  const [categories, setCategories] = useState([]);
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     category: '',
     location: '',
-    image: null
+    image: null,
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-  const categories = getCategories();
+
+  // 2) load categories once on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const cats = await getCategories();   // async call
+        setCategories(Array.isArray(cats) ? cats : []);
+      } catch (err) {
+        console.error('Failed to load categories:', err);
+        setCategories([]);
+      }
+    })();
+  }, [getCategories]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -38,11 +54,11 @@ const Submit = () => {
     }
 
     try {
-      const newComplaint = addComplaint({
+      const newComplaint = await addComplaint({
         title: formData.title,
         description: formData.description,
         category: formData.category,
-        location: formData.location
+        location: formData.location,
       });
 
       setSuccess(true);
@@ -51,13 +67,14 @@ const Submit = () => {
         description: '',
         category: '',
         location: '',
-        image: null
+        image: null,
       });
 
       setTimeout(() => {
         navigate(`/complaint/${newComplaint.id}`);
       }, 2000);
     } catch (err) {
+      console.error(err);
       setError('Failed to submit complaint');
     }
   };
@@ -66,13 +83,24 @@ const Submit = () => {
     <div className="container mx-auto p-4 max-w-2xl">
       <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-2xl font-bold mb-6">Submit a Complaint or Feedback</h2>
-        
-        {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
-        {success && <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">Your complaint has been submitted successfully! You will be redirected shortly.</div>}
-        
+
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
+          </div>
+        )}
+        {success && (
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+            Your complaint has been submitted successfully! You will be redirected shortly.
+          </div>
+        )}
+
         <form onSubmit={handleSubmit}>
+          {/* Title */}
           <div className="mb-4">
-            <label className="block text-gray-700 mb-2" htmlFor="title">Title <span className="text-red-600">*</span></label>
+            <label htmlFor="title" className="block text-gray-700 mb-2">
+              Title <span className="text-red-600">*</span>
+            </label>
             <input
               id="title"
               name="title"
@@ -84,9 +112,12 @@ const Submit = () => {
               required
             />
           </div>
-          
+
+          {/* Category */}
           <div className="mb-4">
-            <label className="block text-gray-700 mb-2" htmlFor="category">Category <span className="text-red-600">*</span></label>
+            <label htmlFor="category" className="block text-gray-700 mb-2">
+              Category <span className="text-red-600">*</span>
+            </label>
             <select
               id="category"
               name="category"
@@ -96,14 +127,19 @@ const Submit = () => {
               required
             >
               <option value="">Select a category</option>
-              {categories.map((category, index) => (
-                <option key={index} value={category}>{category}</option>
+              {categories.map((cat, idx) => (
+                <option key={idx} value={cat}>
+                  {cat}
+                </option>
               ))}
             </select>
           </div>
-          
+
+          {/* Description */}
           <div className="mb-4">
-            <label className="block text-gray-700 mb-2" htmlFor="description">Description <span className="text-red-600">*</span></label>
+            <label htmlFor="description" className="block text-gray-700 mb-2">
+              Description <span className="text-red-600">*</span>
+            </label>
             <textarea
               id="description"
               name="description"
@@ -113,11 +149,14 @@ const Submit = () => {
               onChange={handleChange}
               placeholder="Detailed description of the issue"
               required
-            ></textarea>
+            />
           </div>
-          
+
+          {/* Location */}
           <div className="mb-4">
-            <label className="block text-gray-700 mb-2" htmlFor="location">Location</label>
+            <label htmlFor="location" className="block text-gray-700 mb-2">
+              Location
+            </label>
             <input
               id="location"
               name="location"
@@ -128,9 +167,12 @@ const Submit = () => {
               placeholder="Address or location of the issue (if applicable)"
             />
           </div>
-          
+
+          {/* Image */}
           <div className="mb-6">
-            <label className="block text-gray-700 mb-2" htmlFor="image">Attach Image (optional)</label>
+            <label htmlFor="image" className="block text-gray-700 mb-2">
+              Attach Image (optional)
+            </label>
             <input
               id="image"
               name="image"
@@ -140,7 +182,8 @@ const Submit = () => {
               onChange={handleImageChange}
             />
           </div>
-          
+
+          {/* Submit */}
           <button
             type="submit"
             className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-300"

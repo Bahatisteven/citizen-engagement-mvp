@@ -18,6 +18,7 @@ const AppProvider = ({ children }) => {
       if (user) {
         setCurrentUser(user);
         setIsAuthenticated(true);
+        fetchComplaints();
       }
     }
   }, []);
@@ -64,6 +65,16 @@ const AppProvider = ({ children }) => {
       throw new Error(err.response?.data?.error || 'Login failed');
     }
   };
+
+
+const fetchComplaints = async () => {
+  try {
+    const res = await api.get('/complaints');           
+    setComplaints(res.data);                             
+  } catch (err) {
+    console.error('Failed loading complaints:', err);
+  }
+};
 
   const logout = () => {
     localStorage.removeItem('token');
@@ -120,6 +131,7 @@ const AppProvider = ({ children }) => {
       isAuthenticated,
       register,
       login,
+      fetchComplaints,
       logout,
       addComplaint,
       updateComplaintStatus,

@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 
 const register = async (req, res) => {
   try {
+    console.log("Registering user...");
     const { name, email, password, role, category } = req.body;
 
     const existing = await User.findOne({ email });
@@ -25,6 +26,7 @@ const register = async (req, res) => {
       category: user.category || null
     });
   } catch (err) {
+    console.log("Error registering user:", err);
     res.status(500).json({ error: 'Registration failed' });
   }
 };

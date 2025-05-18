@@ -9,7 +9,9 @@ const Registration = () => {
     name: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    role: 'citizen',
+    category: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -30,7 +32,7 @@ const Registration = () => {
     }
 
     try {
-      await register(formData.name, formData.email, formData.password, 'citizen');
+      await register(formData.name, formData.email, formData.password, formData.role, formData.role === 'pending_institution' ? formData.category : undefined);
       navigate('/dashboard/citizen');
     } catch (err) {
       setError(err.message || 'Registration failed');
