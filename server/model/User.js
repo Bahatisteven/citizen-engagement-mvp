@@ -2,45 +2,28 @@ const mongoose = require('mongoose');
 const argon2 = require('argon2');
 
 const userSchema = new mongoose.Schema({
-  email: {
-    type: String,
-    required: true,
-    lowercase: true,
-    unique: true,
-    trim: true
-  },
-  password: {
-    type: String,
-    required: true,
-    select: false // exclude by default
-  },
+  name: { type: String, required: true, trim: true },
+  email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+  password: { type: String, required: true, select: false },
   role: {
     type: String,
-    enum: ['citizen', 'institution', 'admin'],
+    enum: ['citizen','pending_institution','institution','admin'],
     required: true
   },
-  // Only required for institutions:
-  category: {
+  category: { type: String, enum: ['Road','Water','Electricity','Health','Other'], required: function(){ return this.role==='institution' || this.role==='pending_institution'}},
+    status: {
     type: String,
-    enum: ['Road', 'Water', 'Electricity', 'Health', 'Other'],
-    required: function () { return this.role === 'institution'; }
+    enum: ['pending','approved'],
+    default: function() {
+      return this.role === 'citizen' ? 'approved' : 'pending';
+    }
   }
 }, { timestamps: true });
 
-// Pre-save password hashing with Argon2
-userSchema.pre('save', async function (next) {
+userSchema.pre('save', async function(next){
   if (!this.isModified('password')) return next();
-  try {
-    this.password = await argon2.hash(this.password);
-    next();
-  } catch (err) {
-    next(err);
-  }
+  this.password = await argon2.hash(this.password);
+  next();
 });
-
-// an instance method to verify password
-userSchema.methods.verifyPassword = function (candidatePassword) {
-  return argon2.verify(this.password, candidatePassword);
-};
-
+userSchema.methods.verifyPassword = function(pw){ return argon2.verify(this.password, pw); };
 module.exports = mongoose.model('User', userSchema);
