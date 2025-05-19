@@ -7,15 +7,31 @@ const InstitutionDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('open');
   
-  if (!currentUser || currentUser.role !== 'institution') {
+  if (!currentUser || (currentUser.role !== 'institution' && currentUser.role !== 'pending_institution')) {
     return <Navigate to="/login" />;
   }
+
+  if (currentUser.role === 'pending_institution') {
+    return (
+      <div className="container mx-auto p-4">
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded shadow">
+          <h2 className="text-xl font-semibold mb-2">Institution Registration Pending</h2>
+          <p className="text-gray-700">
+            Your institution account is awaiting admin approval. You’ll be able to see and manage
+            complaints as soon as an administrator approves your registration.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   
   const institutionComplaints = complaints.filter(c => c.assignedTo === currentUser.id);
   const openComplaints = institutionComplaints.filter(c => c.status === 'Open');
   const inProgressComplaints = institutionComplaints.filter(c => c.status === 'In Progress');
   const resolvedComplaints = institutionComplaints.filter(c => c.status === 'Resolved');
   
+
   const getStatusColor = (status) => {
     switch(status) {
       case 'Open': return 'bg-yellow-100 text-yellow-800';

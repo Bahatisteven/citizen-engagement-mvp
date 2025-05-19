@@ -10,7 +10,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
     setError('');
   };
 
@@ -20,14 +20,22 @@ const Login = () => {
     setError('');
 
     try {
-      await login(form.email, form.password, form.role);
-      if (form.role === 'admin') {
-        navigate('/dashboard/admin');
-      } else if (form.role === 'institution') {
-        navigate('/dashboard/institution');
-      } else {
-        navigate('/dashboard/citizen');
-      }
+      const user = await login(form.email, form.password, form.role);
+
+       if (user.role === 'admin') {
+         navigate('/dashboard/admin');
+       } else if (
+         user.role === 'institution' ||
+         user.role === 'pending_institution'
+       ) {
+         if (user.role === 'pending_institution') {
+           navigate('/institution-pending');
+         } else {
+           navigate('/dashboard/institution');
+         }
+       } else {
+         navigate('/dashboard/citizen');
+       }
     } catch (err) {
       setError(err.message);
     } finally {

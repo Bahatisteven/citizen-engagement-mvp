@@ -32,8 +32,21 @@ const Registration = () => {
     }
 
     try {
-      await register(formData.name, formData.email, formData.password, formData.role, formData.role === 'pending_institution' ? formData.category : undefined);
-      navigate('/dashboard/citizen');
+      await register(
+        formData.name,
+        formData.email,
+        formData.password,
+        formData.role,
+        formData.role === 'pending_institution' ? formData.category : undefined
+      );
+      if (formData.role === 'institution') {
+        navigate('/dashboard/institution');
+      } else if (formData.role === 'pending_institution') {
+        navigate('/institution-pending');
+      } else {
+        navigate('/dashboard/citizen');
+      }
+      
     } catch (err) {
       setError(err.message || 'Registration failed');
     } finally {
@@ -45,7 +58,7 @@ const Registration = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 to-gray-100 px-4">
       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
         <h2 className="text-3xl font-bold text-center text-gray-800 mb-6">
-          Register as a Citizen
+          Register
         </h2>
 
         {error && (
@@ -116,6 +129,46 @@ const Registration = () => {
               placeholder="Confirm your password"
             />
           </div>
+
+          {/* role */}
+          <div>
+            <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
+              I am a
+            </label>
+            <select
+              id="role"
+              name="role"
+              value={formData.role}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="citizen">Citizen</option>
+              <option value="pending_institution">Institution</option>
+            </select>
+          </div>
+
+          {/* department/category for institutions */}
+
+          {formData.role === 'pending_institution' && (
+            <div>
+              <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+                Department / Category
+              </label>
+              <select
+                id="category"
+                name="category"
+                value={formData.category}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select a category</option>
+                {['Road','Water','Electricity','Health','Other'].map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <button
             type="submit"
