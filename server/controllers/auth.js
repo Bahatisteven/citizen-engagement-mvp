@@ -3,13 +3,16 @@ const jwt = require('jsonwebtoken');
 
 exports.register = async (req, res) => {
   try {
+    // here we register the user 
     const { name, email, password, role, category } = req.body;
-    const existing = await User.findOne({ email });
-    if (existing) return res.status(400).json({ error: 'Email already registered' });
+    const doesUserExist = await User.findOne({ email });
+    if (doesUserExist) return res.status(400).json({ error: 'Email already registered' });
 
+    // here we create the user
     const user = new User({ name, email, password, role, category });
     await user.save();
 
+    // token generation
     const token = jwt.sign(
       { id: user._id, role: user.role, category: user.category || null },
       process.env.JWT_SECRET,
@@ -24,13 +27,18 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
+    // sending email and password in request body
     const { email, password } = req.body;
+
+    // find user by email
     const user = await User.findOne({ email }).select('+password');
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
 
-    const valid = await user.verifyPassword(password);
-    if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
+    // verify password of the user
+    const isPasswordValid = await user.verifyPassword(password);
+    if (!isPasswordValid) return res.status(401).json({ error: 'Invalid credentials' });
 
+    // token generation for the user
     const token = jwt.sign(
       { id: user._id, role: user.role, category: user.category || null },
       process.env.JWT_SECRET,

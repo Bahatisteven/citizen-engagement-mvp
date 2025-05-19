@@ -19,18 +19,22 @@ const App = () => {
   return (
     <BrowserRouter>
       <AppProvider>
+        {/* main application container */}
         <div className="min-h-screen bg-gray-100">
           <Navigation />
           <Routes>
+            {/* public routes */}
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Registration />} />
-            <Route path="/submit" element={<ProtectedRoute element={<Submit />} allowedRoles={['citizen']} />} />
+            <Route path="/institution-pending" element={<InstitutionPending />} />
             <Route path="/status" element={<Status />} />
+            
+            {/* protected routes */}
+            <Route path="/submit" element={<ProtectedRoute element={<Submit />} allowedRoles={['citizen']} />} />
             <Route path="/complaint/:complaintId" element={<ComplaintDetail />} />
             <Route path="/dashboard/citizen" element={<ProtectedRoute element={<CitizenDashboard />} allowedRoles={['citizen']} />} />
             <Route path="/dashboard/institution" element={<ProtectedRoute element={<InstitutionDashboard />} allowedRoles={['institution']} />} />
-            <Route path="/institution-pending" element={<InstitutionPending />} />
             <Route path="/dashboard/admin" element={<ProtectedRoute element={<Admin />} allowedRoles={['admin']} />} />
           </Routes>
         </div>

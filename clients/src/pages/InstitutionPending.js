@@ -1,4 +1,6 @@
 import React from 'react';
+
+// institution dashboard: shows complaints routed to this institution
 export default function InstitutionPending() {
   return (
     <div className="container mx-auto p-4">

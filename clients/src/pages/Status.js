@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { AppContext } from '../context/AppContext';
 
+// page for checking the status of a complaint
 const Status = () => {
   const { complaints, getUserById } = React.useContext(AppContext);
   const [complaintId, setComplaintId] = useState('');
   const [complaint, setComplaint] = useState(null);
   const [error, setError] = useState('');
   
+  // handling submi
   const handleSubmit = (e) => {
     e.preventDefault();
     setError('');
