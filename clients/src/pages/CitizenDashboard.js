@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
 
+// dashboard for citizens
 const CitizenDashboard = () => {
   const { complaints, currentUser } = React.useContext(AppContext);
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ const CitizenDashboard = () => {
     return <Navigate to="/login" />;
   }
   
+  // filter complaints by citizen
   const userComplaints = complaints.filter(c => c.citizen === currentUser.id);
   const activeComplaints = userComplaints.filter(c => c.status !== 'Resolved');
   const resolvedComplaints = userComplaints.filter(c => c.status === 'Resolved');

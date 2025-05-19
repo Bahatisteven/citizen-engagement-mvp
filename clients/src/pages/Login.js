@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
 
+// Login component
 const Login = () => {
   const { login } = React.useContext(AppContext);
   const navigate = useNavigate();
@@ -9,11 +10,13 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // handle form changes
   const handleChange = (e) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
     setError('');
   };
 
+  // handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);

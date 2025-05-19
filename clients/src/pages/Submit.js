@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
 
+// submit a new complaint
 const Submit = () => {
   const { addComplaint, getCategories } = React.useContext(AppContext);
   const navigate = useNavigate();
@@ -41,6 +42,7 @@ const Submit = () => {
     }
   };
 
+  // handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');

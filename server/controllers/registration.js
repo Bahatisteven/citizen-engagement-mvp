@@ -3,17 +3,20 @@ const jwt = require('jsonwebtoken');
 
 const register = async (req, res) => {
   try {
-    console.log("Registering user...");
+    // sending name, email, role, category and password in request body 
     const { name, email, password, role, category } = req.body;
 
-    const existing = await User.findOne({ email });
-    if (existing) {
+    // finding user by email
+    const isUserExist = await User.findOne({ email });
+    if (isUserExist) {
       return res.status(400).json({ error: 'Email already registered' });
     }
 
+    // create new user
     const user = new User({ name, email, password, role, category });
     await user.save();
 
+    // token generation
     const token = jwt.sign(
       { id: user._id, role: user.role, category: user.category || null },
       process.env.JWT_SECRET,

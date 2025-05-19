@@ -1,4 +1,7 @@
+// here we define the Complaint model for the database 
 const mongoose = require('mongoose');
+
+// define the Complaint schema 
 const Schema = mongoose.Schema;
 const ComplaintSchema = new Schema({
   title: { type: String, required: true, trim: true },
@@ -11,4 +14,6 @@ const ComplaintSchema = new Schema({
   responses: [{ text: String, from: String, date: String }],
   history: [{ action: String, notes: String, updatedBy: String, timestamp: { type: Date, default: Date.now } }]
 }, { timestamps: true });
+
+// export the Complaint model
 module.exports = mongoose.model('Complaint', ComplaintSchema);
