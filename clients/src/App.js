@@ -4,6 +4,7 @@ import './App.css';
 import { AppProvider } from './context/AppContext';
 import Navigation from './components/Navigation';
 import ProtectedRoute from './components/ProtectedRoute';
+import InstitutionPending from './pages/InstitutionPending';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Registration from './pages/Registration';
@@ -29,6 +30,7 @@ const App = () => {
             <Route path="/complaint/:complaintId" element={<ComplaintDetail />} />
             <Route path="/dashboard/citizen" element={<ProtectedRoute element={<CitizenDashboard />} allowedRoles={['citizen']} />} />
             <Route path="/dashboard/institution" element={<ProtectedRoute element={<InstitutionDashboard />} allowedRoles={['institution']} />} />
+            <Route path="/institution-pending" element={<InstitutionPending />} />
             <Route path="/dashboard/admin" element={<ProtectedRoute element={<Admin />} allowedRoles={['admin']} />} />
           </Routes>
         </div>

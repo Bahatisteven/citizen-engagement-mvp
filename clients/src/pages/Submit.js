@@ -6,7 +6,6 @@ const Submit = () => {
   const { addComplaint, getCategories } = React.useContext(AppContext);
   const navigate = useNavigate();
 
-  // 1) hold categories in state
   const [categories, setCategories] = useState([]);
 
   const [formData, setFormData] = useState({
@@ -19,7 +18,6 @@ const Submit = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  // 2) load categories once on mount
   useEffect(() => {
     (async () => {
       try {
@@ -96,7 +94,9 @@ const Submit = () => {
         )}
 
         <form onSubmit={handleSubmit}>
-          {/* Title */}
+
+          {/* title */}
+
           <div className="mb-4">
             <label htmlFor="title" className="block text-gray-700 mb-2">
               Title <span className="text-red-600">*</span>
@@ -113,7 +113,8 @@ const Submit = () => {
             />
           </div>
 
-          {/* Category */}
+          {/* category */}
+
           <div className="mb-4">
             <label htmlFor="category" className="block text-gray-700 mb-2">
               Category <span className="text-red-600">*</span>
@@ -135,7 +136,8 @@ const Submit = () => {
             </select>
           </div>
 
-          {/* Description */}
+          {/* description */}
+
           <div className="mb-4">
             <label htmlFor="description" className="block text-gray-700 mb-2">
               Description <span className="text-red-600">*</span>
@@ -152,7 +154,8 @@ const Submit = () => {
             />
           </div>
 
-          {/* Location */}
+          {/* location */}
+
           <div className="mb-4">
             <label htmlFor="location" className="block text-gray-700 mb-2">
               Location
@@ -168,7 +171,8 @@ const Submit = () => {
             />
           </div>
 
-          {/* Image */}
+          {/* image */}
+
           <div className="mb-6">
             <label htmlFor="image" className="block text-gray-700 mb-2">
               Attach Image (optional)
@@ -183,7 +187,8 @@ const Submit = () => {
             />
           </div>
 
-          {/* Submit */}
+          {/* submit */}
+
           <button
             type="submit"
             className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-300"
