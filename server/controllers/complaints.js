@@ -1,5 +1,4 @@
 const Complaint = require('../model/Complaint.js');
-
 const categoryToAgency = {
   Road: 'Department of Roads',
   Water: 'Water Authority',
@@ -13,96 +12,79 @@ const categoryToAgency = {
   Other: 'General Department',
 };
 
-// a new complaint
+// create new complaint
 exports.createComplaint = async (req, res) => {
   try {
-    const { title, description, category, citizen } = req.body;
+    // sending title, description, category, location and citizen in request body
+    const { title, description, category, location, citizen } = req.body;
 
+    // assigning complint to appropriate agency
     const assignedAgency = categoryToAgency[category] || 'General Department';
+    const complaint = new Complaint({ title, description, category, location, citizen, assignedAgency });
 
-    const newComplaint = new Complaint({
-      title,
-      description,
-      category,
-      assignedAgency,
-      citizen,
-      status: 'Pending',
-      history: [
-        {
-          action: 'Complaint Created',
-          notes: 'Initial submission',
-          updatedBy: 'Citizen',
-        },
-      ],
-    });
-
-    const savedComplaint = await newComplaint.save();
-    console.log("New complaint submitted:", savedComplaint._id);
-
-    res.status(201).json({ id: savedComplaint._id });
+    // saving the complaint
+    const saved = await complaint.save();
+    res.status(201).json(saved);
   } catch (err) {
-    console.error("Error submitting complaint:", err.message);
+    console.error('Create Complaint Error:', err);
     res.status(400).json({ error: err.message });
   }
 };
 
-// get complaint by ID
+
+// get complaint by id
 exports.getComplaintById = async (req, res) => {
   try {
+    // finding complaint by id in request body
     const complaint = await Complaint.findById(req.params.id);
-    if (!complaint) {
-      return res.status(404).json({ error: 'Complaint not found' });
-    }
+    if (!complaint) return res.status(404).json({ error: 'Complaint not found' });
     res.json(complaint);
   } catch (err) {
-    console.error("Error retrieving complaint:", err.message);
+    console.error('Get Complaint Error:', err);
     res.status(400).json({ error: err.message });
   }
 };
 
-// list all complaints (with optional filters)
+
+// list all complaints
 exports.listComplaints = async (req, res) => {
   try {
+    // sending status and category in request query
     const { status, category } = req.query;
+
+    // filtering complaints
     const filter = {};
     if (status) filter.status = status;
     if (category) filter.category = category;
 
+    // finding and sorting complaints
     const complaints = await Complaint.find(filter).sort({ createdAt: -1 });
     res.json(complaints);
   } catch (err) {
-    console.error("Error listing complaints:", err.message);
+    console.error('List Complaints Error:', err);
     res.status(400).json({ error: err.message });
   }
 };
 
-// update status and log in history
+// update complaint
 exports.updateComplaint = async (req, res) => {
   try {
-    const { status, note, updatedBy = 'Admin' } = req.body;
-    const allowedStatuses = ['Pending', 'In Progress', 'Resolved', 'Rejected'];
+    // sending status, note and updatedBy in request body
+    const { status, note, updatedBy } = req.body;
 
-    if (status && !allowedStatuses.includes(status)) {
-      return res.status(400).json({ error: 'Invalid status value' });
-    }
-
+    // finding complaint by id in request body
     const complaint = await Complaint.findById(req.params.id);
-    if (!complaint) {
-      return res.status(404).json({ error: 'Complaint not found' });
-    }
-
+    if (!complaint) return res.status(404).json({ error: 'Complaint not found' });
     if (status) complaint.status = status;
 
-    complaint.history.push({
-      action: `Status changed to ${status}`,
-      notes: note || '',
-      updatedBy,
-    });
+    // updating complaint history
+    complaint.history.push({ action: `Status changed to ${status}`, notes: note || '', updatedBy: updatedBy || 'Admin' });
 
-    await complaint.save();
-    res.json(complaint);
+    // saving the updated complaint
+    const updated = await complaint.save();
+    res.json(updated);
   } catch (err) {
-    console.error("Error updating complaint:", err.message);
+    console.error('Update Complaint Error:', err);
     res.status(400).json({ error: err.message });
   }
 };

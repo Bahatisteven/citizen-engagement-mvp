@@ -1,8 +1,5 @@
 # citizen-engagement-mvp
 
-<<<<<<< Updated upstream
-Citizen Engagement System that allows citizens to submit complaints or feedback on public services.
-=======
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen)](https://nodejs.org/)
 [![React Version](https://img.shields.io/badge/react-19.1.0-blue)](https://reactjs.org/)
@@ -724,4 +721,3 @@ SOFTWARE.
 **Made with ❤️ by Bahati Steven**
 
 *Last updated: January 2025*
->>>>>>> Stashed changes
