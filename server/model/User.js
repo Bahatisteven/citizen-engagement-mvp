@@ -18,7 +18,9 @@ const userSchema = new mongoose.Schema({
     default: function() {
       return this.role === 'citizen' ? 'approved' : 'pending';
     }
-  }
+  },
+  resetPasswordToken: { type: String },
+  resetPasswordExpires: { type: Date }
 }, { timestamps: true });
 
 // hash password using argon2
