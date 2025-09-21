@@ -16,9 +16,9 @@ exports.register = async (req, res) => {
 
     // token generation
     const token = jwt.sign(
-      { id: user._id, role: user.role, category: user.category || null },
+      { sub: user._id, role: user.role, category: user.category || null },
       process.env.JWT_SECRET,
-      { expiresIn: '1d' }
+      { expiresIn: '24h' }
     );
     res.status(201).json({ token, role: user.role, category: user.category || null });
   } catch (err) {
@@ -42,9 +42,9 @@ exports.login = async (req, res) => {
 
     // token generation for the user
     const token = jwt.sign(
-      { id: user._id, role: user.role, category: user.category || null },
+      { sub: user._id, role: user.role, category: user.category || null },
       process.env.JWT_SECRET,
-      { expiresIn: '1d' }
+      { expiresIn: '24h' }
     );
     res.json({ token, role: user.role, category: user.category || null });
   } catch (err) {
@@ -102,7 +102,7 @@ exports.resetPassword = async (req, res) => {
 
 exports.getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
+    const user = await User.findById(req.auth.sub).select('-password');
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json(user);
   } catch (err) {
@@ -114,7 +114,7 @@ exports.getProfile = async (req, res) => {
 exports.updateProfile = async (req, res) => {
   try {
     const { name, email } = req.body;
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.auth.sub);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
     if (email && email !== user.email) {
@@ -135,7 +135,7 @@ exports.updateProfile = async (req, res) => {
 
 exports.getPendingInstitutions = async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    if (req.auth.role !== 'admin') {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -149,7 +149,7 @@ exports.getPendingInstitutions = async (req, res) => {
 
 exports.approveInstitution = async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    if (req.auth.role !== 'admin') {
       return res.status(403).json({ error: 'Access denied' });
     }
 
