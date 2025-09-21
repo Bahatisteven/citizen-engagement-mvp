@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { register, login, forgotPassword, resetPassword, getProfile, updateProfile, getPendingInstitutions, approveInstitution } = require('../controllers/auth.js');
-const { authenticateToken } = require('../middleware/auth.js');
+const { requireAuth } = require('../middleware/auth.js');
 
 // routes for authentication
 router.post('/register', register);
@@ -14,11 +14,11 @@ router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 
 // profile management routes
-router.get('/profile', authenticateToken, getProfile);
-router.put('/profile', authenticateToken, updateProfile);
+router.get('/profile', requireAuth, getProfile);
+router.put('/profile', requireAuth, updateProfile);
 
 // admin routes for institution approval
-router.get('/pending-institutions', authenticateToken, getPendingInstitutions);
-router.put('/approve-institution/:id', authenticateToken, approveInstitution);
+router.get('/pending-institutions', requireAuth, getPendingInstitutions);
+router.put('/approve-institution/:id', requireAuth, approveInstitution);
 
 module.exports = router;
