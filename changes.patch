@@ -1,0 +1,134 @@
+From 373581bb79ea9f2791902c3f388cf4067ccdc943 Mon Sep 17 00:00:00 2001
+From: Bahatisteven <bahatisteven92@gmail.com>
+Date: Sun, 21 Sep 2025 20:12:37 +0200
+Subject: [PATCH] fix: resolve authentication middleware issues and add
+ environment config
+
+---
+ server/.env.example        | 18 ++++++++++++++++++
+ server/controllers/auth.js | 16 ++++++++--------
+ server/routes/auth.js      | 10 +++++-----
+ 3 files changed, 31 insertions(+), 13 deletions(-)
+ create mode 100644 server/.env.example
+
+diff --git a/server/.env.example b/server/.env.example
+new file mode 100644
+index 0000000..32d3c2c
+--- /dev/null
++++ b/server/.env.example
+@@ -0,0 +1,18 @@
++# Database Configuration
++MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database?retryWrites=true&w=majority
++
++# JWT Configuration
++JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
++
++# Email Configuration
++EMAIL_USER=your-email@gmail.com
++EMAIL_PASS=your-app-specific-password
++
++# Frontend URL (for password reset links)
++FRONTEND_URL=http://localhost:3000
++
++# Server Configuration
++PORT=3001
++
++# Environment
++NODE_ENV=development
+\ No newline at end of file
+diff --git a/server/controllers/auth.js b/server/controllers/auth.js
+index 856f40c..6524be4 100644
+--- a/server/controllers/auth.js
++++ b/server/controllers/auth.js
+@@ -16,9 +16,9 @@ exports.register = async (req, res) => {
+ 
+     // token generation
+     const token = jwt.sign(
+-      { id: user._id, role: user.role, category: user.category || null },
++      { sub: user._id, role: user.role, category: user.category || null },
+       process.env.JWT_SECRET,
+-      { expiresIn: '1d' }
++      { expiresIn: '24h' }
+     );
+     res.status(201).json({ token, role: user.role, category: user.category || null });
+   } catch (err) {
+@@ -42,9 +42,9 @@ exports.login = async (req, res) => {
+ 
+     // token generation for the user
+     const token = jwt.sign(
+-      { id: user._id, role: user.role, category: user.category || null },
++      { sub: user._id, role: user.role, category: user.category || null },
+       process.env.JWT_SECRET,
+-      { expiresIn: '1d' }
++      { expiresIn: '24h' }
+     );
+     res.json({ token, role: user.role, category: user.category || null });
+   } catch (err) {
+@@ -102,7 +102,7 @@ exports.resetPassword = async (req, res) => {
+ 
+ exports.getProfile = async (req, res) => {
+   try {
+-    const user = await User.findById(req.user.id).select('-password');
++    const user = await User.findById(req.auth.sub).select('-password');
+     if (!user) return res.status(404).json({ error: 'User not found' });
+     res.json(user);
+   } catch (err) {
+@@ -114,7 +114,7 @@ exports.getProfile = async (req, res) => {
+ exports.updateProfile = async (req, res) => {
+   try {
+     const { name, email } = req.body;
+-    const user = await User.findById(req.user.id);
++    const user = await User.findById(req.auth.sub);
+     if (!user) return res.status(404).json({ error: 'User not found' });
+ 
+     if (email && email !== user.email) {
+@@ -135,7 +135,7 @@ exports.updateProfile = async (req, res) => {
+ 
+ exports.getPendingInstitutions = async (req, res) => {
+   try {
+-    if (req.user.role !== 'admin') {
++    if (req.auth.role !== 'admin') {
+       return res.status(403).json({ error: 'Access denied' });
+     }
+ 
+@@ -149,7 +149,7 @@ exports.getPendingInstitutions = async (req, res) => {
+ 
+ exports.approveInstitution = async (req, res) => {
+   try {
+-    if (req.user.role !== 'admin') {
++    if (req.auth.role !== 'admin') {
+       return res.status(403).json({ error: 'Access denied' });
+     }
+ 
+diff --git a/server/routes/auth.js b/server/routes/auth.js
+index 730e7bf..564cfbd 100644
+--- a/server/routes/auth.js
++++ b/server/routes/auth.js
+@@ -1,7 +1,7 @@
+ const express = require('express');
+ const router = express.Router();
+ const { register, login, forgotPassword, resetPassword, getProfile, updateProfile, getPendingInstitutions, approveInstitution } = require('../controllers/auth.js');
+-const { authenticateToken } = require('../middleware/auth.js');
++const { requireAuth } = require('../middleware/auth.js');
+ 
+ // routes for authentication
+ router.post('/register', register);
+@@ -14,11 +14,11 @@ router.post('/forgot-password', forgotPassword);
+ router.post('/reset-password', resetPassword);
+ 
+ // profile management routes
+-router.get('/profile', authenticateToken, getProfile);
+-router.put('/profile', authenticateToken, updateProfile);
++router.get('/profile', requireAuth, getProfile);
++router.put('/profile', requireAuth, updateProfile);
+ 
+ // admin routes for institution approval
+-router.get('/pending-institutions', authenticateToken, getPendingInstitutions);
+-router.put('/approve-institution/:id', authenticateToken, approveInstitution);
++router.get('/pending-institutions', requireAuth, getPendingInstitutions);
++router.put('/approve-institution/:id', requireAuth, approveInstitution);
+ 
+ module.exports = router;
+-- 
+2.34.1
+
