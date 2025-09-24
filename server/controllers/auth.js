@@ -2,6 +2,11 @@ const User = require('../model/User.js');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const sendEmail = require('../utils/sendEmail.js');
+const { createTokenPair, revokeRefreshToken } = require('../middleware/refreshToken');
+const { recordFailedAttempt, clearFailedAttempts } = require('../middleware/accountLockout');
+const { blacklistToken } = require('../middleware/tokenBlacklist');
+const { logSecurityEvent } = require('../middleware/requestLogger');
+const { APIError } = require('../middleware/errorHandler');
 
 exports.register = async (req, res) => {
   try {
@@ -14,13 +19,25 @@ exports.register = async (req, res) => {
     const user = new User({ name, email, password, role, category });
     await user.save();
 
-    // token generation
-    const token = jwt.sign(
-      { sub: user._id, role: user.role, category: user.category || null },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
-    );
-    res.status(201).json({ token, role: user.role, category: user.category || null });
+    // Generate token pair
+    const tokens = await createTokenPair(user);
+
+    logSecurityEvent('User registration successful', {
+      userId: user._id,
+      email: user.email,
+      role: user.role
+    }, req);
+
+    res.status(201).json({
+      ...tokens,
+      role: user.role,
+      category: user.category || null,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email
+      }
+    });
   } catch (err) {
     console.error('Register Error:', err);
     res.status(500).json({ error: 'Registration failed' });
@@ -29,24 +46,48 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    // sending email and password in request body
     const { email, password } = req.body;
 
-    // find user by email
+    // Find user by email
     const user = await User.findOne({ email }).select('+password');
-    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+    if (!user) {
+      recordFailedAttempt(email, req);
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
 
-    // verify password of the user
+    // Verify password
     const isPasswordValid = await user.verifyPassword(password);
-    if (!isPasswordValid) return res.status(401).json({ error: 'Invalid credentials' });
+    if (!isPasswordValid) {
+      recordFailedAttempt(email, req);
+      logSecurityEvent('Failed login attempt - Invalid password', {
+        email,
+        userId: user._id
+      }, req);
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
 
-    // token generation for the user
-    const token = jwt.sign(
-      { sub: user._id, role: user.role, category: user.category || null },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
-    );
-    res.json({ token, role: user.role, category: user.category || null });
+    // Clear failed attempts on successful login
+    clearFailedAttempts(email);
+
+    // Generate token pair
+    const tokens = await createTokenPair(user);
+
+    logSecurityEvent('User login successful', {
+      userId: user._id,
+      email: user.email,
+      role: user.role
+    }, req);
+
+    res.json({
+      ...tokens,
+      role: user.role,
+      category: user.category || null,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email
+      }
+    });
   } catch (err) {
     console.error('Login Error:', err);
     res.status(500).json({ error: 'Login failed' });
@@ -130,6 +171,39 @@ exports.updateProfile = async (req, res) => {
   } catch (err) {
     console.error('Update Profile Error:', err);
     res.status(500).json({ error: 'Failed to update profile' });
+  }
+};
+
+exports.logout = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    const authHeader = req.headers.authorization;
+
+    // Revoke refresh token if provided
+    if (refreshToken) {
+      await revokeRefreshToken(req.auth.sub, refreshToken);
+    } else {
+      // Revoke all refresh tokens for this user
+      await revokeRefreshToken(req.auth.sub);
+    }
+
+    // Blacklist the current access token
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      const decoded = jwt.decode(token);
+      if (decoded && decoded.exp) {
+        blacklistToken(token, decoded.exp * 1000);
+      }
+    }
+
+    logSecurityEvent('User logout successful', {
+      userId: req.auth.sub
+    }, req);
+
+    res.json({ message: 'Logout successful' });
+  } catch (err) {
+    console.error('Logout Error:', err);
+    res.status(500).json({ error: 'Logout failed' });
   }
 };
 

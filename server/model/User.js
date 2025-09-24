@@ -20,7 +20,13 @@ const userSchema = new mongoose.Schema({
     }
   },
   resetPasswordToken: { type: String },
-  resetPasswordExpires: { type: Date }
+  resetPasswordExpires: { type: Date },
+  refreshTokens: [{
+    token: { type: String, required: true },
+    createdAt: { type: Date, default: Date.now },
+    expiresAt: { type: Date, required: true },
+    isActive: { type: Boolean, default: true }
+  }]
 }, { timestamps: true });
 
 // hash password using argon2

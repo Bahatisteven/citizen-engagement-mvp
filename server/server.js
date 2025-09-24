@@ -7,12 +7,31 @@ const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const session = require('express-session');
 const { generalLimiter } = require('./middleware/rateLimiter');
+const { errorHandler } = require('./middleware/errorHandler');
+const { logRequests } = require('./middleware/requestLogger');
+const { checkTokenBlacklist } = require('./middleware/tokenBlacklist');
+const { checkAccountLockout } = require('./middleware/accountLockout');
+const { inputSanitizer, profiles } = require('./middleware/inputSanitizer');
+const path = require('path');
+const fs = require('fs');
 
 // import routes
 const authRoutes = require('./routes/auth');
 const complaintRoutes = require('./routes/complaints');
 
 const app = express();
+
+// Ensure logs directory exists
+const logsDir = path.join(__dirname, 'logs');
+if (!fs.existsSync(logsDir)) {
+  fs.mkdirSync(logsDir, { recursive: true });
+}
+
+// Trust proxy if behind reverse proxy (for accurate IP addresses)
+app.set('trust proxy', 1);
+
+// Request logging - Apply early for comprehensive logging
+app.use(logRequests);
 
 // Security middleware - Apply first for maximum protection
 app.use(helmet({
@@ -52,12 +71,21 @@ app.use(session({
   }
 }));
 
+// Token blacklist check (before auth routes)
+app.use(checkTokenBlacklist);
+
+// Account lockout check for auth routes
+app.use('/api/auth/login', checkAccountLockout);
+
 // Apply general rate limiting to all requests
 app.use(generalLimiter);
 
 // Parse JSON with size limit for security
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Input sanitization middleware
+app.use(inputSanitizer(profiles.strict));
 
 // CORS configuration
 const corsOptions = {
@@ -83,14 +111,31 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// routes to be used for 
+// API versioning and health check
+app.get('/health', (_req, res) => {
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    version: process.env.npm_package_version || '1.0.0'
+  });
+});
+
+// routes to be used for
 app.use('/api/auth', authRoutes);
 app.use('/api/complaints', complaintRoutes);
 
-app.use((err, _req, res, _next) => {
-  console.error(err);
-  res.status(500).json({ error: 'Server error' });
+// 404 handler for unknown routes
+app.use('*', (req, res) => {
+  res.status(404).json({
+    error: 'Route not found',
+    path: req.originalUrl,
+    method: req.method,
+    timestamp: new Date().toISOString()
+  });
 });
+
+// Use centralized error handler
+app.use(errorHandler);
 
 // port number
 const PORT = process.env.PORT || 3001;
