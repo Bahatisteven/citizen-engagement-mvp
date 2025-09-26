@@ -1,50 +1,62 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
+import { useForm } from '../hooks/useForm';
+import { validators } from '../utils/validation';
+import FormInput from '../components/FormInput';
+import FormSelect from '../components/FormSelect';
+import { ButtonLoader } from '../components/LoadingSpinner';
+import ErrorAlert from '../components/ErrorAlert';
 
-// Login component
 const Login = () => {
   const { login } = React.useContext(AppContext);
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: '', password: '', role: 'citizen' });
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
 
-  // handle form changes
-  const handleChange = (e) => {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    setError('');
+  const validationRules = {
+    email: [validators.required, validators.email],
+    password: [validators.required],
+    role: [validators.required]
   };
 
-  // handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+  const {
+    values,
+    errors,
+    isSubmitting,
+    handleChange,
+    handleBlur,
+    handleSubmit,
+    setFieldError
+  } = useForm(
+    { email: '', password: '', role: 'citizen' },
+    validationRules
+  );
 
+  const onSubmit = async (formData) => {
     try {
-      const user = await login(form.email, form.password, form.role);
+      const user = await login(formData.email, formData.password, formData.role);
 
-       if (user.role === 'admin') {
-         navigate('/dashboard/admin');
-       } else if (
-         user.role === 'institution' ||
-         user.role === 'pending_institution'
-       ) {
-         if (user.role === 'pending_institution') {
-           navigate('/institution-pending');
-         } else {
-           navigate('/dashboard/institution');
-         }
-       } else {
-         navigate('/dashboard/citizen');
-       }
+      if (user.role === 'admin') {
+        navigate('/dashboard/admin');
+      } else if (user.role === 'institution' || user.role === 'pending_institution') {
+        if (user.role === 'pending_institution') {
+          navigate('/institution-pending');
+        } else {
+          navigate('/dashboard/institution');
+        }
+      } else {
+        navigate('/dashboard/citizen');
+      }
     } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      setFieldError('general', err.message);
+      throw err;
     }
   };
+
+  const roleOptions = [
+    { value: 'citizen', label: 'Citizen' },
+    { value: 'institution', label: 'Institution' },
+    { value: 'admin', label: 'Admin' }
+  ];
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 to-gray-100 px-4">
@@ -53,74 +65,67 @@ const Login = () => {
           CitizenVoice Login
         </h2>
         <p className="text-center text-gray-600 mb-6">
-          Sign in as a {form.role.charAt(0).toUpperCase() + form.role.slice(1)}
+          Sign in as a {values.role.charAt(0).toUpperCase() + values.role.slice(1)}
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
-              User Type
-            </label>
-            <select
-              id="role"
-              name="role"
-              value={form.role}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="citizen">Citizen</option>
-              <option value="institution">Institution</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
+        <form onSubmit={(e) => { e.preventDefault(); handleSubmit(onSubmit); }} className="space-y-6">
+          <FormSelect
+            label="User Type"
+            name="role"
+            value={values.role}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            options={roleOptions}
+            error={errors.role}
+            required
+          />
 
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email Address
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              value={form.email}
-              onChange={handleChange}
-              required
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter your email"
-            />
-          </div>
+          <FormInput
+            label="Email Address"
+            name="email"
+            type="email"
+            value={values.email}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            error={errors.email}
+            placeholder="Enter your email"
+            required
+          />
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              value={form.password}
-              onChange={handleChange}
-              required
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter your password"
-            />
-          </div>
+          <FormInput
+            label="Password"
+            name="password"
+            type="password"
+            value={values.password}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            error={errors.password}
+            placeholder="Enter your password"
+            required
+          />
 
-          {error && (
-            <p className="text-red-600 text-sm text-center">{error}</p>
+          {errors.general && (
+            <ErrorAlert error={errors.general} />
           )}
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            disabled={isSubmitting}
+            className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center"
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            {isSubmitting ? (
+              <>
+                <ButtonLoader />
+                <span className="ml-2">Signing in...</span>
+              </>
+            ) : (
+              'Sign In'
+            )}
           </button>
         </form>
 
         <p className="mt-4 text-center text-sm text-gray-600">
-          Don’t have an account?{' '}
+          Don't have an account?{' '}
           <Link to="/register" className="text-blue-600 hover:underline">
             Register
           </Link>
