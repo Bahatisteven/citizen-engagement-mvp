@@ -1,9 +1,29 @@
 const express = require('express');
 const router = express.Router();
-const { register, login, forgotPassword, resetPassword, getProfile, updateProfile, getPendingInstitutions, approveInstitution, logout } = require('../controllers/auth.js');
+const { register,
+     login, 
+     forgotPassword, 
+     resetPassword, 
+     getProfile, 
+     updateProfile, 
+     getPendingInstitutions, 
+     approveInstitution, 
+     logout 
+    } = require('../controllers/auth.js');
 const { requireAuth } = require('../middleware/auth.js');
-const { authLimiter, passwordResetLimiter, registrationLimiter } = require('../middleware/rateLimiter.js');
-const { validateRegister, validateLogin, validateForgotPassword, validateResetPassword, validateUpdateProfile, validateInstitutionId } = require('../middleware/validators.js');
+const { 
+    authLimiter, 
+    passwordResetLimiter, 
+    registrationLimiter 
+} = require('../middleware/rateLimiter.js');
+const { 
+    validateRegister, 
+    validateLogin, 
+    validateForgotPassword, 
+    validateResetPassword, 
+    validateUpdateProfile, 
+    validateInstitutionId 
+} = require('../middleware/validators.js');
 const { csrfMiddleware } = require('../middleware/csrf.js');
 const { refreshAccessToken } = require('../middleware/refreshToken.js');
 

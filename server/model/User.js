@@ -38,4 +38,13 @@ userSchema.pre('save', async function(next){
 
 // here we verify password using argon2
 userSchema.methods.verifyPassword = function(pw){ return argon2.verify(this.password, pw); };
+
+// Create indexes for better query performance
+userSchema.index({ email: 1 }); // For login queries
+userSchema.index({ role: 1 }); // For role-based queries
+userSchema.index({ status: 1 }); // For status filtering
+userSchema.index({ category: 1 }); // For institution category filtering
+userSchema.index({ resetPasswordToken: 1 }); // For password reset
+userSchema.index({ 'refreshTokens.token': 1 }); // For refresh token validation
+
 module.exports = mongoose.model('User', userSchema);

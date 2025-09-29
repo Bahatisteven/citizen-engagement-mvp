@@ -12,6 +12,7 @@ const { logRequests } = require('./middleware/requestLogger');
 const { checkTokenBlacklist } = require('./middleware/tokenBlacklist');
 const { checkAccountLockout } = require('./middleware/accountLockout');
 const { inputSanitizer, profiles } = require('./middleware/inputSanitizer');
+const { requestIdMiddleware } = require('./middleware/requestId');
 const path = require('path');
 const fs = require('fs');
 
@@ -29,6 +30,9 @@ if (!fs.existsSync(logsDir)) {
 
 // Trust proxy if behind reverse proxy (for accurate IP addresses)
 app.set('trust proxy', 1);
+
+// Request ID generation - Apply first for request tracking
+app.use(requestIdMiddleware);
 
 // Request logging - Apply early for comprehensive logging
 app.use(logRequests);

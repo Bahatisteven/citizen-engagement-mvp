@@ -26,6 +26,6 @@ exports.signToken = (user) => {
     role: user.role,
     category: user.category || null
   }, JWT_SECRET, {
-    expiresIn: '12h'
+    expiresIn: process.env.JWT_EXPIRES_IN || '15m'
   });
 };
