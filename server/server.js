@@ -13,6 +13,8 @@ const { checkTokenBlacklist } = require('./middleware/tokenBlacklist');
 const { checkAccountLockout } = require('./middleware/accountLockout');
 const { inputSanitizer, profiles } = require('./middleware/inputSanitizer');
 const { requestIdMiddleware } = require('./middleware/requestId');
+const config = require('./config');
+const logger = require('./config/logger');
 const path = require('path');
 const fs = require('fs');
 
@@ -64,11 +66,11 @@ app.use(mongoSanitize({
 
 // Session configuration for CSRF token storage
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'your-session-secret-key',
+  secret: config.security.sessionSecret,
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+    secure: config.server.isProduction,
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     sameSite: 'strict'
@@ -97,17 +99,13 @@ const corsOptions = {
     // Allow requests with no origin (like mobile apps or Postman)
     if (!origin) return callback(null, true);
 
-    const allowedOrigins = process.env.ALLOWED_ORIGINS
-      ? process.env.ALLOWED_ORIGINS.split(',')
-      : ['http://localhost:3000', 'http://localhost:5173'];
-
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    if (config.cors.allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true,
+  credentials: config.cors.credentials,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   optionsSuccessStatus: 200
@@ -116,11 +114,15 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // API versioning and health check
-app.get('/health', (_req, res) => {
+app.get('/health', async (_req, res) => {
+  const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+
   res.json({
-    status: 'OK',
+    status: dbStatus === 'connected' ? 'OK' : 'DEGRADED',
     timestamp: new Date().toISOString(),
-    version: process.env.npm_package_version || '1.0.0'
+    version: process.env.npm_package_version || '1.0.0',
+    database: dbStatus,
+    uptime: process.uptime()
   });
 });
 
@@ -141,13 +143,111 @@ app.use('*', (req, res) => {
 // Use centralized error handler
 app.use(errorHandler);
 
-// port number
-const PORT = process.env.PORT || 3001;
+// Database connection with retry logic
+const connectDB = async (retries = 5) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await mongoose.connect(config.database.uri, config.database.options);
+      logger.logInfo('Connected to MongoDB successfully', {
+        attempt: i + 1,
+        host: mongoose.connection.host,
+        name: mongoose.connection.name
+      });
+      return;
+    } catch (error) {
+      logger.logError(`MongoDB connection attempt ${i + 1} failed`, error);
 
-// database connection
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => {
-    console.log('Connected to MongoDB Atlas');
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-  })
-  .catch(err => console.error('DB connection error:', err));
+      if (i < retries - 1) {
+        const delay = Math.min(1000 * Math.pow(2, i), 30000); // Exponential backoff, max 30s
+        logger.logInfo(`Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } else {
+        logger.logError('Failed to connect to MongoDB after all retries');
+        process.exit(1);
+      }
+    }
+  }
+};
+
+// Mongoose connection event handlers
+mongoose.connection.on('connected', () => {
+  logger.logInfo('Mongoose connected to MongoDB');
+});
+
+mongoose.connection.on('error', (err) => {
+  logger.logError('Mongoose connection error', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+  logger.logWarn('Mongoose disconnected from MongoDB');
+});
+
+// Server instance
+let server;
+
+// Start server
+const startServer = async () => {
+  try {
+    // Connect to database
+    await connectDB();
+
+    // Start Express server
+    server = app.listen(config.server.port, () => {
+      logger.logInfo(`Server started successfully`, {
+        port: config.server.port,
+        env: config.server.env,
+        nodeVersion: process.version
+      });
+    });
+  } catch (error) {
+    logger.logError('Failed to start server', error);
+    process.exit(1);
+  }
+};
+
+// Graceful shutdown handler
+const gracefulShutdown = async (signal) => {
+  logger.logInfo(`Received ${signal}, starting graceful shutdown...`);
+
+  // Stop accepting new connections
+  if (server) {
+    server.close(() => {
+      logger.logInfo('HTTP server closed');
+    });
+  }
+
+  try {
+    // Close database connection
+    await mongoose.connection.close();
+    logger.logInfo('MongoDB connection closed');
+
+    // Exit process
+    logger.logInfo('Graceful shutdown completed');
+    process.exit(0);
+  } catch (error) {
+    logger.logError('Error during graceful shutdown', error);
+    process.exit(1);
+  }
+};
+
+// Handle termination signals
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  logger.logError('Uncaught Exception', error);
+  gracefulShutdown('uncaughtException');
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  logger.logError('Unhandled Rejection', {
+    reason,
+    promise
+  });
+  gracefulShutdown('unhandledRejection');
+});
+
+// Start the server
+startServer();
