@@ -106,11 +106,12 @@ exports.forgotPassword = async (req, res) => {
     await user.save();
 
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
-    await sendEmail({
-      to: user.email,
-      subject: 'Password Reset Request',
-      text: `Click this link to reset your password: ${resetUrl}`
-    });
+    await sendEmail(
+      user.email,
+      'Password Reset Request',
+      `Click this link to reset your password: ${resetUrl}`,
+      `<p>Click this link to reset your password:</p><p><a href="${resetUrl}">${resetUrl}</a></p>`
+    );
 
     res.json({ message: 'Password reset email sent' });
   } catch (err) {
@@ -237,11 +238,12 @@ exports.approveInstitution = async (req, res) => {
     user.status = 'approved';
     await user.save();
 
-    await sendEmail({
-      to: user.email,
-      subject: 'Institution Approval',
-      text: `Your institution account has been approved. You can now log in and manage complaints.`
-    });
+    await sendEmail(
+      user.email,
+      'Institution Approval',
+      `Your institution account has been approved. You can now log in and manage complaints.`,
+      `<h2>Institution Account Approved</h2><p>Your institution account has been approved. You can now log in and manage complaints.</p>`
+    );
 
     res.json({ message: 'Institution approved successfully' });
   } catch (err) {

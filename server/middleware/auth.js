@@ -20,6 +20,13 @@ exports.requireRole = (role) => (req, res, next) => {
   next();
 };
 
+exports.requireRoles = (...roles) => (req, res, next) => {
+  if (!roles.includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  next();
+};
+
 exports.signToken = (user) => {
   return jwt.sign({
     sub: user._id,

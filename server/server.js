@@ -127,8 +127,10 @@ app.get('/health', async (_req, res) => {
 });
 
 // routes to be used for
+const adminRoutes = require('./routes/admin');
 app.use('/api/auth', authRoutes);
 app.use('/api/complaints', complaintRoutes);
+app.use('/api/admin', adminRoutes);
 
 // 404 handler for unknown routes
 app.use('*', (req, res) => {
