@@ -18,8 +18,23 @@ const categoryToInstitutionCategory = {
 // create new complaint
 exports.createComplaint = async (req, res) => {
   try {
-    // sending title, description, category, location and citizen in request body
-    const { title, description, category, location, citizen } = req.body;
+    // Extract only safe fields from request body (citizen comes from JWT auth)
+    const { title, description, category, location } = req.body;
+
+    // Get authenticated user ID from JWT token (set by requireAuth middleware)
+    const citizenId = req.auth.sub;
+
+    // Verify the user exists and is a citizen
+    const citizen = await User.findById(citizenId);
+    if (!citizen) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (citizen.role !== 'citizen') {
+      return res.status(403).json({
+        error: 'Only citizens can create complaints'
+      });
+    }
 
     // Find an approved institution with matching category
     const institutionCategory = categoryToInstitutionCategory[category] || 'Other';
@@ -40,12 +55,19 @@ exports.createComplaint = async (req, res) => {
       description,
       category,
       location,
-      citizen,
+      citizen: citizenId, // Use authenticated user ID instead of request body
       assignedAgency: assignedAgency._id
     });
 
     // saving the complaint
     const saved = await complaint.save();
+
+    // Populate citizen and agency data for response
+    await saved.populate([
+      { path: 'citizen', select: 'name email' },
+      { path: 'assignedAgency', select: 'name email category' }
+    ]);
+
     res.status(201).json(saved);
   } catch (err) {
     console.error('Create Complaint Error:', err);

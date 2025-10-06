@@ -102,10 +102,7 @@ exports.validateCreateComplaint = [
     .optional()
     .trim()
     .isLength({ max: 200 }).withMessage('Location must not exceed 200 characters'),
-  body('citizen')
-    .trim()
-    .notEmpty().withMessage('Citizen name is required')
-    .isLength({ min: 2, max: 100 }).withMessage('Citizen name must be between 2 and 100 characters'),
+  // Removed 'citizen' validation - it now comes from authenticated JWT token
   handleValidationErrors
 ];
 

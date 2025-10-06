@@ -56,6 +56,16 @@ class CSRFProtection {
       next();
     };
   }
+
+  // Middleware to send CSRF token in response header
+  attachTokenToResponse() {
+    return (req, res, next) => {
+      if (req.session.csrfToken) {
+        res.setHeader('X-CSRF-Token', req.session.csrfToken);
+      }
+      next();
+    };
+  }
 }
 
 // Create instance with configuration
@@ -67,5 +77,6 @@ const csrfProtection = new CSRFProtection({
 module.exports = {
   csrfProtection,
   csrfMiddleware: csrfProtection.middleware(),
-  csrfTokenProvider: csrfProtection.provideToken()
+  csrfTokenProvider: csrfProtection.provideToken(),
+  csrfTokenAttacher: csrfProtection.attachTokenToResponse()
 };

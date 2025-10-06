@@ -1,31 +1,39 @@
 const express = require('express');
 const router = express.Router();
 const { register,
-     login, 
-     forgotPassword, 
-     resetPassword, 
-     getProfile, 
-     updateProfile, 
-     getPendingInstitutions, 
-     approveInstitution, 
-     logout 
+     login,
+     forgotPassword,
+     resetPassword,
+     getProfile,
+     updateProfile,
+     getPendingInstitutions,
+     approveInstitution,
+     logout
     } = require('../controllers/auth.js');
 const { requireAuth } = require('../middleware/auth.js');
-const { 
-    authLimiter, 
-    passwordResetLimiter, 
-    registrationLimiter 
+const {
+    authLimiter,
+    passwordResetLimiter,
+    registrationLimiter
 } = require('../middleware/rateLimiter.js');
-const { 
-    validateRegister, 
-    validateLogin, 
-    validateForgotPassword, 
-    validateResetPassword, 
-    validateUpdateProfile, 
-    validateInstitutionId 
+const {
+    validateRegister,
+    validateLogin,
+    validateForgotPassword,
+    validateResetPassword,
+    validateUpdateProfile,
+    validateInstitutionId
 } = require('../middleware/validators.js');
-const { csrfMiddleware } = require('../middleware/csrf.js');
+const { csrfMiddleware, csrfTokenAttacher } = require('../middleware/csrf.js');
 const { refreshAccessToken } = require('../middleware/refreshToken.js');
+
+// CSRF token endpoint - allows frontend to get a valid CSRF token
+router.get('/csrf-token', csrfTokenAttacher, (req, res) => {
+  res.json({
+    csrfToken: req.session.csrfToken,
+    message: 'CSRF token generated. Include this in X-CSRF-Token header for state-changing requests.'
+  });
+});
 
 // routes for authentication
 router.post('/register', registrationLimiter, validateRegister, register);

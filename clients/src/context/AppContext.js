@@ -131,9 +131,13 @@ const AppProvider = ({ children }) => {
 
   const addComplaint = async (complaint) => {
     try {
+      // Citizen ID is automatically extracted from JWT token on the backend
+      // Only send title, description, category, and location
       const response = await api.post('/complaints', {
-        ...complaint,
-        citizen: currentUser?.email || currentUser?.id
+        title: complaint.title,
+        description: complaint.description,
+        category: complaint.category,
+        location: complaint.location
       });
 
       const newComplaint = response.data;

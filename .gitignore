@@ -89,3 +89,8 @@ temp/
 
 # Misc
 .cache/
+
+# Claude Code session notes and documentation (keep local only)
+CLAUDE.md
+QUICK_REFERENCE.md
+SECURITY_AUDIT_*.md
