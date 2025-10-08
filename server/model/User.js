@@ -40,7 +40,7 @@ userSchema.pre('save', async function(next){
 userSchema.methods.verifyPassword = function(pw){ return argon2.verify(this.password, pw); };
 
 // Create indexes for better query performance
-userSchema.index({ email: 1 }); // For login queries
+// Note: email index is already created by 'unique: true' on line 7
 userSchema.index({ role: 1 }); // For role-based queries
 userSchema.index({ status: 1 }); // For status filtering
 userSchema.index({ category: 1 }); // For institution category filtering

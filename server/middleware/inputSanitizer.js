@@ -141,12 +141,18 @@ const inputSanitizer = (options = {}) => {
 
       // Sanitize query parameters
       if (req.query && typeof req.query === 'object') {
-        req.query = sanitizeObject(req.query, options.query || options);
+        const sanitizedQuery = sanitizeObject(req.query, options.query || options);
+        // Clear existing properties and assign sanitized ones
+        Object.keys(req.query).forEach(key => delete req.query[key]);
+        Object.assign(req.query, sanitizedQuery);
       }
 
       // Sanitize URL parameters
       if (req.params && typeof req.params === 'object') {
-        req.params = sanitizeObject(req.params, options.params || options);
+        const sanitizedParams = sanitizeObject(req.params, options.params || options);
+        // Clear existing properties and assign sanitized ones
+        Object.keys(req.params).forEach(key => delete req.params[key]);
+        Object.assign(req.params, sanitizedParams);
       }
 
       // Sanitize headers (selective)
