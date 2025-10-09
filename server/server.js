@@ -4,7 +4,6 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
-const mongoSanitize = require('express-mongo-sanitize');
 const session = require('express-session');
 const { generalLimiter } = require('./middleware/rateLimiter');
 const { errorHandler } = require('./middleware/errorHandler');
@@ -56,14 +55,6 @@ app.use(helmet({
   }
 }));
 
-// MongoDB sanitization - Prevent NoSQL injection attacks
-app.use(mongoSanitize({
-  replaceWith: '_',
-  onSanitize: ({ req, key }) => {
-    console.warn(`Sanitized ${key} in ${req.originalUrl}`);
-  }
-}));
-
 // Session configuration for CSRF token storage
 app.use(session({
   secret: config.security.sessionSecret,
@@ -90,7 +81,8 @@ app.use(generalLimiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Input sanitization middleware
+// Input sanitization middleware (includes NoSQL injection prevention)
+// Note: Removed express-mongo-sanitize due to Express 5 incompatibility
 app.use(inputSanitizer(profiles.strict));
 
 // CORS configuration
@@ -107,14 +99,15 @@ const corsOptions = {
   },
   credentials: config.cors.credentials,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
+  exposedHeaders: ['X-CSRF-Token'],
   optionsSuccessStatus: 200
 };
 
 app.use(cors(corsOptions));
 
 // API versioning and health check
-app.get('/health', async (_req, res) => {
+app.get('/health', async (req, res) => {
   const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
 
   res.json({
@@ -133,7 +126,7 @@ app.use('/api/complaints', complaintRoutes);
 app.use('/api/admin', adminRoutes);
 
 // 404 handler for unknown routes
-app.use('*', (req, res) => {
+app.use((req, res) => {
   res.status(404).json({
     error: 'Route not found',
     path: req.originalUrl,

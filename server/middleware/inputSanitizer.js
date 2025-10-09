@@ -120,11 +120,19 @@ const sanitizeObject = (obj, options = {}) => {
     return obj.map(item => sanitizeObject(item, options));
   }
 
+  // Fields that should never be sanitized (passwords, tokens, etc.)
+  const skipFields = options.skipFields || ['password', 'newPassword', 'oldPassword', 'currentPassword', 'token', 'refreshToken'];
+
   const sanitizedObj = {};
   for (const [key, value] of Object.entries(obj)) {
-    // Sanitize keys as well
-    const sanitizedKey = sanitizeString(key, { ...options, allowHtml: false });
-    sanitizedObj[sanitizedKey] = sanitizeObject(value, options);
+    // Skip sanitization for password fields and tokens
+    if (skipFields.includes(key)) {
+      sanitizedObj[key] = value;
+    } else {
+      // Sanitize keys as well
+      const sanitizedKey = sanitizeString(key, { ...options, allowHtml: false });
+      sanitizedObj[sanitizedKey] = sanitizeObject(value, options);
+    }
   }
 
   return sanitizedObj;
@@ -140,19 +148,27 @@ const inputSanitizer = (options = {}) => {
       }
 
       // Sanitize query parameters
+      // Skip query/params sanitization as they can be read-only in newer Express versions
+      // Query parameters should be validated at the route level instead
       if (req.query && typeof req.query === 'object') {
-        const sanitizedQuery = sanitizeObject(req.query, options.query || options);
-        // Clear existing properties and assign sanitized ones
-        Object.keys(req.query).forEach(key => delete req.query[key]);
-        Object.assign(req.query, sanitizedQuery);
+        try {
+          // Store sanitized version in separate property for route handlers to use
+          req.sanitizedQuery = sanitizeObject(req.query, options.query || options);
+        } catch (error) {
+          // Silently fail if query sanitization causes issues
+          req.sanitizedQuery = req.query;
+        }
       }
 
       // Sanitize URL parameters
       if (req.params && typeof req.params === 'object') {
-        const sanitizedParams = sanitizeObject(req.params, options.params || options);
-        // Clear existing properties and assign sanitized ones
-        Object.keys(req.params).forEach(key => delete req.params[key]);
-        Object.assign(req.params, sanitizedParams);
+        try {
+          // Store sanitized version in separate property for route handlers to use
+          req.sanitizedParams = sanitizeObject(req.params, options.params || options);
+        } catch (error) {
+          // Silently fail if params sanitization causes issues
+          req.sanitizedParams = req.params;
+        }
       }
 
       // Sanitize headers (selective)
