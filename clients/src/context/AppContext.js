@@ -14,17 +14,25 @@ const AppProvider = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       const token = localStorage.getItem('token');
+      const refreshToken = localStorage.getItem('refreshToken');
 
       if (token) {
         try {
           const decoded = jwtDecode(token);
 
+          // If token is expired but we have a refresh token, let the interceptor handle it
           if (decoded.exp * 1000 < Date.now()) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('userId');
-            localStorage.removeItem('role');
-            setLoading(false);
-            return;
+            if (!refreshToken) {
+              // No refresh token, clear everything
+              localStorage.removeItem('token');
+              localStorage.removeItem('refreshToken');
+              localStorage.removeItem('userId');
+              localStorage.removeItem('role');
+              localStorage.removeItem('category');
+              setLoading(false);
+              return;
+            }
+            // Have refresh token, proceed and let interceptor refresh
           }
 
           const response = await api.get('/auth/profile');
@@ -34,8 +42,10 @@ const AppProvider = ({ children }) => {
         } catch (error) {
           console.error('Auth initialization failed:', error);
           localStorage.removeItem('token');
+          localStorage.removeItem('refreshToken');
           localStorage.removeItem('userId');
           localStorage.removeItem('role');
+          localStorage.removeItem('category');
         }
       }
       setLoading(false);
@@ -50,9 +60,10 @@ const AppProvider = ({ children }) => {
     setError(null);
     try {
       const response = await api.post('/auth/register', { name, email, password, role, category });
-      const { token, role: userRole, category: userCategory } = response.data;
+      const { accessToken, refreshToken, role: userRole, category: userCategory } = response.data;
 
-      localStorage.setItem('token', token);
+      localStorage.setItem('token', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('role', userRole);
       if (userCategory) localStorage.setItem('category', userCategory);
 
@@ -76,13 +87,14 @@ const AppProvider = ({ children }) => {
     setError(null);
     try {
       const response = await api.post('/auth/login', { email, password });
-      const { token, role: userRole, category } = response.data;
+      const { accessToken, refreshToken, role: userRole, category } = response.data;
 
       if (userRole !== role) {
         throw new Error(`This is a ${role} login. Please use the ${userRole} login option.`);
       }
 
-      localStorage.setItem('token', token);
+      localStorage.setItem('token', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('role', userRole);
       if (category) localStorage.setItem('category', category);
 
@@ -114,11 +126,13 @@ const AppProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await api.post('/auth/logout');
+      const refreshToken = localStorage.getItem('refreshToken');
+      await api.post('/auth/logout', { refreshToken });
     } catch (err) {
       console.error('Logout error:', err);
     } finally {
       localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
       localStorage.removeItem('userId');
       localStorage.removeItem('role');
       localStorage.removeItem('category');
