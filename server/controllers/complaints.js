@@ -151,3 +151,34 @@ exports.updateComplaint = async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 };
+
+// add response
+exports.addResponse = async (req, res) => {
+  try {
+    const { text } = req.body;
+    const complaint = await Complaint.findById(req.params.id);
+
+    if (!complaint) return res.status(404).json({ error: 'Complaint not found' });
+
+    // Add response
+    complaint.responses.push({
+      text,
+      from: req.auth.sub, // authenticated user ID
+      timestamp: new Date()
+    });
+
+    await complaint.save();
+
+    // Return the updated complaint with populated fields
+    const updatedComplaint = await Complaint.findById(req.params.id)
+      .populate('citizen', 'name email')
+      .populate('assignedAgency', 'name email category')
+      .populate('responses.from', 'name email role')
+      .populate('history.updatedBy', 'name email role');
+
+    res.json(updatedComplaint);
+  } catch (err) {
+    console.error('Add Response Error:', err);
+    res.status(400).json({ error: err.message });
+  }
+};

@@ -4,14 +4,16 @@ const {
   createComplaint,
   getComplaintById,
   listComplaints,
-  updateComplaint
+  updateComplaint,
+  addResponse
 } = require('../controllers/complaints');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const {
   validateCreateComplaint,
   validateUpdateComplaint,
   validateComplaintId,
-  validateComplaintQuery
+  validateComplaintQuery,
+  validateAddResponse
 } = require('../middleware/validators');
 const { csrfMiddleware } = require('../middleware/csrf');
 const {
@@ -31,5 +33,8 @@ router.get('/:id', requireAuth, validateComplaintId, authorizeComplaintView, get
 
 // route for updating a specific complaint (with authorization check)
 router.put('/:id', requireAuth, validateComplaintId, validateUpdateComplaint, authorizeComplaintUpdate, csrfMiddleware, updateComplaint);
+
+// route for adding a response (citizens, institutions, admins)
+router.post('/:id/responses', requireAuth, validateComplaintId, validateAddResponse, authorizeComplaintView, csrfMiddleware, addResponse);
 
 module.exports = router;

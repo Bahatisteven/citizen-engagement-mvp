@@ -145,3 +145,11 @@ exports.validateComplaintQuery = [
     .withMessage('Invalid category'),
   handleValidationErrors
 ];
+
+exports.validateAddResponse = [
+  body('text')
+    .trim()
+    .notEmpty().withMessage('Response text is required')
+    .isLength({ min: 1, max: 2000 }).withMessage('Response must be between 1 and 2000 characters'),
+  handleValidationErrors
+];
