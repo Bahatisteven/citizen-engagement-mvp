@@ -402,6 +402,8 @@ citizen-engagement-mvp/
 │   │   │   └── AppContext.js     # Global state management
 │   │   ├── 📁 data/              # Mock data and constants
 │   │   │   └── mockData.js       # Development data
+│   │   ├── 📁 hooks/             # Custom React hooks
+│   │   │   └── useForm.js        # Form handling hook
 │   │   ├── 📁 pages/             # Page components
 │   │   │   ├── Home.js           # Landing page
 │   │   │   ├── Login.js          # Authentication page
@@ -412,6 +414,8 @@ citizen-engagement-mvp/
 │   │   │   ├── InstitutionDashboard.js
 │   │   │   ├── Admin.js          # Admin panel
 │   │   │   └── ComplaintDetail.js
+│   │   ├── 📁 utils/             # Utility functions
+│   │   │   └── validation.js     # Input validation
 │   │   ├── api.js                # Axios configuration
 │   │   ├── App.js                # Main app component
 │   │   └── index.js              # App entry point
@@ -432,6 +436,9 @@ citizen-engagement-mvp/
 │   ├── 📁 routes/                # API route definitions
 │   │   ├── auth.js               # Authentication routes
 │   │   └── complaints.js         # Complaint routes
+│   ├── 📁 services/              # Business logic services
+│   │   ├── authService.js        # Auth service
+│   │   └── complaintService.js   # Complaint service
 │   ├── 📁 utils/                 # Utility functions
 │   │   └── sendEmail.js          # Email notifications
 │   ├── server.js                 # Express server setup
