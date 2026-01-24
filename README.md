@@ -165,7 +165,7 @@ Ensure you have the following installed:
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
 ### Environment Variables
 
@@ -451,7 +451,7 @@ citizen-engagement-mvp/
 
 ---
 
-##  Development
+## Development
 
 ### Development Scripts
 
@@ -536,7 +536,7 @@ npm test -- --coverage
 
 ---
 
-##  Deployment
+## Deployment
 
 ### Production Environment Variables
 
