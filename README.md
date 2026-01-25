@@ -12,9 +12,9 @@ CitizenVoice is a full-stack web application designed to bridge the communicatio
 
 ### Key Stakeholders
 
-- ** Citizens**: Submit complaints, track progress, and receive updates
-- ** Institutions**: Manage assigned complaints and provide citizen responses
-- ** Administrators**: Oversee system operations and approve institutional access
+- **Citizens**: Submit complaints, track progress, and receive updates
+- **Institutions**: Manage assigned complaints and provide citizen responses
+- **Administrators**: Oversee system operations and approve institutional access
 
 ---
 
