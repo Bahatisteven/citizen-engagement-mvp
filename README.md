@@ -683,10 +683,10 @@ SOFTWARE.
 
 ### Getting Help
 
-- ** Documentation**: Check this README and inline code comments
-- ** Bug Reports**: [Create an issue](https://github.com/yourusername/citizen-engagement-mvp/issues/new)
-- ** Feature Requests**: [Create an issue](https://github.com/yourusername/citizen-engagement-mvp/issues/new)
-- ** Discussions**: [GitHub Discussions](https://github.com/yourusername/citizen-engagement-mvp/discussions)
+- **📚 Documentation**: Check this README and inline code comments
+- **🐛 Bug Reports**: [Create an issue](https://github.com/yourusername/citizen-engagement-mvp/issues/new)
+- **✨ Feature Requests**: [Create an issue](https://github.com/yourusername/citizen-engagement-mvp/issues/new)
+- **💬 Discussions**: [GitHub Discussions](https://github.com/yourusername/citizen-engagement-mvp/discussions)
 
 ### Troubleshooting
 
