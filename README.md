@@ -656,7 +656,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ```
 MIT License
 
-Copyright (c) 2025 Bahati Steven
+Copyright (c) 2026 Bahati Steven
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -727,4 +727,4 @@ SOFTWARE.
 
 **Made with ❤️ by Bahati Steven**
 
-*Last updated: January 2025*
+*Last updated: February 2026*
