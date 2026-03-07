@@ -6,6 +6,7 @@ const Home = () => {
   const { complaints } = React.useContext(AppContext);
   const [topCategories, setTopCategories] = useState([]);
   const [recentResolved, setRecentResolved] = useState([]);
+  const [stats, setStats] = useState({ total: 0, resolved: 0, inProgress: 0, open: 0 });
   
   useEffect(() => {
     const categories = {};
@@ -26,6 +27,13 @@ const Home = () => {
       .slice(0, 3);
     
     setRecentResolved(resolved);
+    
+    setStats({
+      total: complaints.length,
+      resolved: complaints.filter(c => c.status === 'Resolved').length,
+      inProgress: complaints.filter(c => c.status === 'In Progress').length,
+      open: complaints.filter(c => c.status === 'Open').length
+    });
   }, [complaints]);
 
   return (
@@ -37,6 +45,27 @@ const Home = () => {
           <div className="flex space-x-4">
             <Link to="/submit" className="bg-white text-blue-700 px-6 py-2 rounded-md font-medium hover:bg-blue-100 transition-colors">Submit a Complaint</Link>
             <Link to="/status" className="bg-blue-700 text-white border border-white px-6 py-2 rounded-md font-medium hover:bg-blue-800 transition-colors">Track Complaint Status</Link>
+          </div>
+        </div>
+      </section>
+      
+      <section className="mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white p-6 rounded-lg shadow-md text-center">
+            <p className="text-3xl font-bold text-blue-600">{stats.total}</p>
+            <p className="text-gray-600 mt-2">Total Complaints</p>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow-md text-center">
+            <p className="text-3xl font-bold text-green-600">{stats.resolved}</p>
+            <p className="text-gray-600 mt-2">Resolved</p>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow-md text-center">
+            <p className="text-3xl font-bold text-yellow-600">{stats.inProgress}</p>
+            <p className="text-gray-600 mt-2">In Progress</p>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow-md text-center">
+            <p className="text-3xl font-bold text-red-600">{stats.open}</p>
+            <p className="text-gray-600 mt-2">Open</p>
           </div>
         </div>
       </section>
